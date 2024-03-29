@@ -12,14 +12,42 @@ async function init() {
     typeDefs: `
     type Query {
         hello: String
+        users: [User!]!
+        user(id: String!): User
     }
     type Mutation {
       createUser(firstName: String!, lastName: String!, email: String!, password: String!): Boolean
+      deleteUser(id: String!): Boolean
+      updateUser(id: String!, firstName: String!): Boolean 
+    }
+    type User {
+      id: String!
+      firstName: String!
     }
     `,
     resolvers: {
       Query: {
         hello: () => `Hey there`,
+        user: async (_, { id }) => {
+          try {
+            const user = await prismaClient.user.findUnique({
+              where: { id }
+            });
+            return user;
+          } catch (error) {
+            console.error('Error fetching user:', error);
+            throw error;
+          }
+        },
+        users: async () => {
+          try {
+            const users = await prismaClient.user.findMany();
+            return users;
+          } catch (error) {
+            console.error('Error fetching users:', error);
+            throw error;
+          }
+        }
       },
       Mutation: {
         createUser: async (
@@ -47,6 +75,31 @@ async function init() {
           });
           return true;
         },
+        deleteUser: async (_, { id }) => {
+          try {
+            await prismaClient.user.delete({
+              where: { id }
+            });
+            return true;
+          } catch (error) {
+            console.error('Error deleting user:', error);
+            throw error;
+          }
+        },
+        updateUser: async (_, { id, firstName }) => {  // Resolver for updating a movie by ID
+          try {
+            await prismaClient.user.update({
+              where: { id },
+              data: {
+                firstName
+              }
+            });
+            return true;
+          } catch (error) {
+            console.error('Error updating movie:', error);
+            throw error;
+          }
+        }
       },
     },
   });
